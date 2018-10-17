@@ -1,0 +1,41 @@
+Script started on Mon 27 Nov 2017 03:17:12 PM EST
+[sepehr1@linux3 proj7]make
+nasm -f elf -g -l bookcmp.lst bookcmp.asm -o bookcmp.o
+gcc -m32 -ansi -Wall -g main7.o sort_books.o bookcmp.o -o sort_books.out
+[sepehr1@linux3 proj7]./sort_books.out < books.dat
+There were 31 books
+1: Dead until Dark, Charlaine Harris, Fantasy, 2001
+2: Three Weeks with My Brother, Nicholas Sparks, Nonfiction, 2004
+3: 1491, Charles C. Mann, Nonfiction, 2006
+4: Eclipse, Stephenie Meyer, Romance, 2007
+5: New Moon, Stephenie Meyer, Romance, 2007
+6: A Summer Affair, Elin Hilderbrand, Romance, 2008
+7: Murder on Astor Place, Victoria Thompson, Mystery, 2009
+8: The Help, Kathryn Stockett, Fiction, 2009
+9: 1225 Christmas Tree Lane, Debbie Macomber, Romance, 2011
+10: 1Q84, Haruki Murakami, Fiction, 2011
+11: Best Staged Plans, Claire Cook, Fiction, 2011
+12: Breaking Point, Pamela Clare, Romance, 2011
+13: Crossed, Ally Condie, Romance, 2011
+14: Explosive Eighteen, Janet Evanovich, Mystery, 2011
+15: Good Girls Don't, Victoria Dahl, Romance, 2011
+16: Heaven is for Real, Todd Burpo, Nonfiction, 2011
+17: Inheritance, Christopher Paolini, Fantasy, 2011
+18: The 10 Habits of Happy Mothers, Meg Meeker; M.D., Nonfiction, 2011
+19: The Affair, Lee Child, Mystery, 2011
+20: The Gap Year, Sarah Bird, Humor, 2011
+21: The Girl With the Dragon Tattoo, Stieg Larsson, Mystery, 2011
+22: The Prague Cemetery, Umberto Eco, Fiction, 2011
+23: We Need to Talk About Kevin, Lionel Shriver, Fiction, 2011
+24: 15 Seconds, Andrew Gross, Thriller, 2012
+25: Between the Dark and the Dayligh, Richard Marsh, Mystery, 2012
+26: Black Dahlia & White Rose, Joyce Carol Oates, Fiction, 2012
+27: Glad Tidings, Debbie Macomber, Romance, 2012
+28: Harry Potter and the Chamber of , J.K. Rowling, Fantasy, 2012
+29: The Affair Next Door, Anna Katherine Green, Mystery, 2012
+30: The Third Gate, Lincoln Child, Fantasy, 2012
+31: Vow, Kim Carpenter, Nonfiction, 2012
+[sepehr1@linux3 proj7]exit
+exit
+
+Script done on Mon 27 Nov 2017 03:17:30 PM EST

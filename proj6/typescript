@@ -1,0 +1,108 @@
+Script started on Wed 15 Nov 2017 09:05:04 PM EST
+[sepehr1@linux2 proj6]gcc -m32 test1.o frac_heap.o -o test1.out
+[sepehr1@linux2 proj6]test1.out
+
+called malloc() (60): returned 0x8481008
+-2/3 plus 1/4 = -5/12
+
+**** BEGIN HEAP DUMP ****
+   0x848102c
+   0x8481038
+
+**** END HEAP DUMP ****
+
+**** BEGIN HEAP DUMP ****
+   0x8481014
+   0x848102c
+   0x8481038
+
+**** END HEAP DUMP ****
+
+**** BEGIN HEAP DUMP ****
+Free list is empty
+[sepehr1@linux2 proj6]gcc -m32 test1.o frac_heap.o -o test1.out[P[1@2[P[1@2
+[sepehr1@linux2 proj6]test2.out
+
+called malloc() (60): returned 0x8550008
+-2/3 plus 1/4 = -5/12
+
+**** BEGIN HEAP DUMP ****
+   0x855002c
+   0x8550038
+
+**** END HEAP DUMP ****
+
+**** BEGIN HEAP DUMP ****
+   0x8550014
+   0x855002c
+   0x8550038
+
+**** END HEAP DUMP ****
+
+called malloc() (60): returned 0x8550048
+
+**** BEGIN HEAP DUMP ****
+   0x8550054
+   0x8550060
+   0x855006c
+   0x8550078
+
+**** END HEAP DUMP ****
+[sepehr1@linux2 proj6]gcc -m32 test1.o frac_heap.o -o test1.out[P[1@31[P[1@3
+[sepehr1@linux2 proj6]test3.out
+
+called malloc() (60): returned 0x8afa008
+-2/3 plus 1/4 = -5/12
+
+**** BEGIN HEAP DUMP ****
+   0x8afa02c
+   0x8afa038
+
+**** END HEAP DUMP ****
+
+**** BEGIN HEAP DUMP ****
+   0x8afa020
+   0x8afa014
+   0x8afa008
+   0x8afa02c
+   0x8afa038
+
+**** END HEAP DUMP ****
+[sepehr1@linux2 proj6]test3.out[23G[32@gcc -m32 test3.o frac_heap.o -o [64G[P[1@4[P[1@4
+[sepehr1@linux2 proj6]test4.out
+
+called malloc() (60): returned 0x9739008
+-2/3 plus 1/4 = -5/12
+
+**** BEGIN HEAP DUMP ****
+   0x973902c
+   0x9739038
+
+**** END HEAP DUMP ****
+
+called malloc() (60): returned 0x9739048
+
+**** BEGIN HEAP DUMP ****
+   0x9739054
+   0x9739060
+   0x973906c
+   0x9739078
+
+**** END HEAP DUMP ****
+
+**** BEGIN HEAP DUMP ****
+   0x9739020
+   0x9739014
+   0x9739008
+   0x9739054
+   0x9739060
+   0x973906c
+   0x9739078
+
+**** END HEAP DUMP ****
+[sepehr1@linux2 proj6]quit
+quit: Command not found.
+[sepehr1@linux2 proj6]exit
+exit
+
+Script done on Wed 15 Nov 2017 09:05:59 PM EST

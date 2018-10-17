@@ -1,0 +1,81 @@
+     1                                  ; File: bookcmp.asm
+     2                                  	;; sort_books.out
+     3                                  	;; created: 11/26/17
+     4                                  	;; modified: 11/26/17
+     5                                  	;; Sepehr Hajbarat
+     6                                  ;;Defines the bookcmp subroutine for use by the qsort algorithm in sort_books.c
+     7                                  ;
+     8                                  %define AUTHOR_OFFSET 0
+     9                                  %define TITLE_OFFSET 21
+    10                                  %define SUBJECT_OFFSET 54
+    11                                  %define YEAR_OFFSET 68
+    12                                  	
+    13                                  
+    14                                          SECTION .text                   ; Code section.
+    15                                          global  bookcmp                 ; let loader see entry point
+    16                                  
+    17                                  bookcmp: 
+    18 00000000 57                      	push	edi			; push registers we want to use
+    19 00000001 56                      	push	esi
+    20 00000002 51                      	push	ecx
+    21 00000003 52                      	push	edx
+    22 00000004 55                      	push 	ebp
+    23                                  	
+    24 00000005 89E5                    	mov 	ebp, esp		; put what the stack is pointing to in ebp
+    25                                  	
+    26 00000007 8B4D18                  	mov	ecx, [ebp+24]		; get the pointer to the first book by using stack manipulation
+    27 0000000A 8B551C                  	mov	edx, [ebp+28]		; get the pointer to the second book by using stack manipulation
+    28                                  
+    29 0000000D 8B4144                  	mov	eax, [ecx + YEAR_OFFSET]; fetch book1's year field
+    30 00000010 2B4244                  	sub	eax, [edx + YEAR_OFFSET]; and "compare" the to book2's year
+    31 00000013 752A                    	jnz	allDone			; If they're different, we're done
+    32                                  					; with comparisons
+    33                                  
+    34                                  cmpTitles:				; Fall through to here if years same
+    35                                  	;; Following could also be done using "lea" instruction
+    36 00000015 89CF                    	mov	edi, ecx		; Get address of book1's title
+    37 00000017 81C715000000            	add	edi, TITLE_OFFSET
+    38 0000001D 89D6                    	mov	esi, edx		; Get address of book2's title
+    39 0000001F 81C615000000            	add	esi, TITLE_OFFSET
+    40 00000025 B800000000              	mov	eax, 0			; Pre-clear all 32 bits of eax
+    41                                  
+    42 0000002A 8A07                    L1:	mov	al, [edi]		; Fetch next char of book1's title
+    43 0000002C 2A06                    	sub	al, [esi]		; and compare it to matching char in
+    44                                  					; book 2
+    45 0000002E 750C                    	jne	titleCmpDone		; If we find a difference, we are done
+    46                                  					; (note this also works if one string
+    47                                  					; or other at NULL)
+    48                                  
+    49                                  	;; So far, all chars equal; see if we are at end (i.e., check for NULL)
+    50 00000030 803F00                  	cmp	byte [edi], 0
+    51 00000033 7407                    	je	titleCmpDone
+    52 00000035 47                      	inc	edi
+    53 00000036 46                      	inc	esi
+    54 00000037 E9EEFFFFFF              	jmp	L1
+    55                                  
+    56                                  titleCmpDone:
+    57 0000003C 0FBEC0                  	movsx	eax, al			; need to convert 8-bit to full 32-bit
+    58                                  
+    59                                  allDone:				; Clean up and finish
+    60                                  	;; Note that eax already has an appropriate value <0, =0, or >0
+    61                                  
+    62 0000003F 3D00000000              	cmp eax, 0		;to ensure only -1, 0, and 1 are stored compare the value to 0
+    63 00000044 7F04                    	jg .greaterThan		;if it is greater than 0, it will be transformed to a 1
+    64 00000046 7C0C                    	jl .lessThan		;if it is less than 0, it will be transofrmed to a -1
+    65 00000048 7414                    	je .done		;otherwise, just keep the 0 in eax that we already stored from al
+    66                                  
+    67                                  	.greaterThan:		;store a 1 to indicate greater
+    68 0000004A B801000000              		mov eax, 1
+    69 0000004F E90A000000              		jmp .done
+    70                                  
+    71                                  	.lessThan:		;store a -1 to indicate less
+    72 00000054 B8FFFFFFFF              		mov eax, -1
+    73 00000059 E900000000              		jmp .done
+    74                                  
+    75                                  	.done:			;pop all of the registers back to be used again
+    76 0000005E 5D                      		pop 	ebp
+    77 0000005F 5A                      		pop	edx
+    78 00000060 59                      		pop	ecx
+    79 00000061 5E                      		pop	esi
+    80 00000062 5F                      		pop	edi
+    81 00000063 C3                      		ret
