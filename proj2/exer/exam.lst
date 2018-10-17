@@ -1,0 +1,123 @@
+     1                                                  %define STDIN 0
+     2                                  	                %define STDOUT 1
+     3                                  	                %define STDERR 2
+     4                                  	                %define SYSCALL_EXIT  1
+     5                                  	                %define SYSCALL_READ  3
+     6                                  	                %define SYSCALL_WRITE 4
+     7                                  	                %define BUFLEN 256
+     8                                  
+     9                                  	        [SECTION .data]
+    10                                  ;;; ; ; ; Here we declare initialized data. For example: messages, prompts,
+    11                                  ;;; ; ; ; and numbers that we know in advance
+    12 00000000 456E74657220537472-     msg1:	   db "Enter String: "	;user prompt
+    13 00000009 696E673A20         
+    14                                  len1:	   equ $-msg1		;length of first message
+    15                                  
+    16 0000000E 4F726967696E616C3A-     orig:	   db "Original: "	;message to display original string
+    17 00000017 20                 
+    18                                  lenOrig:	equ $-orig	;length of second message
+    19                                  
+    20 00000018 436F6E766572743A20      conv:	   db "Convert: "	;message to display converted string
+    21                                  lenConv:	equ $-conv	;length of thirds message
+    22                                  
+    23 00000021 6162746E766672          letterTable:	    db 'a', 'b', 't', 'n', 'v', 'f', 'r'
+    24 00000028 0708090A0B0C0D5C        decimalTable:	   db 7, 8, 9, 10, 11, 12, 13, 92
+    25 00000030 070A0B0C0D0E0F86        octalTable:	     db 007, 010, 011, 012, 013, 014, 015, 134
+    26                                  
+    27 00000038 4572726F723A20756E-     errUnknown:	     db "Error: unknown escape sequence \" ;error message if capital letter
+    28 00000041 6B6E6F776E20657363-
+    29 0000004A 617065207365717565-
+    30 00000053 6E6365205C         
+    31                                  lenUnknown:	     equ $-errUnknown			   ;length of error message
+    32                                  
+    33 00000058 4572726F723A206F63-     errOverflow:	    db "Error: octal value overflow in \" ;error message if octal overflow
+    34 00000061 74616C2076616C7565-
+    35 0000006A 206F766572666C6F77-
+    36 00000073 20696E205C         
+    37                                  lenOverflow:	    equ $-errOverflow			  ;length of error message
+    38                                  
+    39                                  	        [SECTION .bss]
+    40                                  ;;; ; ; ; Here we declare uninitialized data. We're reserving space (and
+    41                                  ;;; ; ; ; potentially associating names with that space) that our code
+    42                                  ;;; ; ; ; will use as it executes. Think of these as "global variables"
+    43                                  
+    44 00000000 <res 00000100>          buf:	                    resb BUFLEN	; buffer for read
+    45 00000100 <res 00000100>          newStr:	                 resb BUFLEN	; new output we're going to have
+    46 00000200 <res 00000004>          readlen:	                resb 4  ; storage for the length of string we read
+    47                                  
+    48 00000204 <res 00000100>          escapeSeqStr:	           resb BUFLEN ;to hold the error message of what we want to manipulate
+    49 00000304 <res 00000004>          escapeSeqLen:	           resb 4      ;length of error string
+    50                                  
+    51                                  	        [SECTION .text]
+    52                                  
+    53                                  	        global _start   ; make start global so ld can find it
+    54                                  
+    55                                  _start:				; the program actually starts here
+    56                                  ;;; ; ;  prompt for user input
+    57 00000000 B804000000              	mov eax, SYSCALL_WRITE
+    58 00000005 BB01000000              	mov ebx, STDOUT
+    59 0000000A B9[00000000]            	mov ecx, msg1
+    60 0000000F BA0E000000                      mov edx, len1
+    61 00000014 CD80                    	int 80H
+    62                                  
+    63                                  ;;; ; ;  read user input
+    64 00000016 B803000000              	mov eax, SYSCALL_READ
+    65 0000001B BB00000000              	mov ebx, STDIN
+    66 00000020 B9[00000000]            	mov ecx, buf
+    67 00000025 BA00010000              	mov edx, BUFLEN
+    68 0000002A 81EA01000000            	sub edx, 1
+    69 00000030 CD80                    	int 80H
+    70                                  
+    71                                  ;;; ; ;  remember how many characters we read
+    72 00000032 A3[00020000]            	mov [readlen], eax
+    73                                  
+    74                                  ;;; ; ; ;  Tell user what they entered
+    75 00000037 B804000000              	mov eax, SYSCALL_WRITE
+    76 0000003C BB01000000              	mov ebx, STDOUT
+    77 00000041 B9[0E000000]            	mov ecx, orig
+    78 00000046 BA0A000000              	mov edx, lenOrig
+    79 0000004B CD80                    	int 80H
+    80                                  
+    81 0000004D B804000000              	mov eax, SYSCALL_WRITE
+    82 00000052 BB01000000              	mov ebx, STDOUT
+    83                                  	mov ecx, bufOrig
+    84          ******************       error: symbol `bufOrig' undefined
+    85 00000057 BA00010000              	mov edx, BUFLEN
+    86 0000005C CD80                    	int 80H
+    87 0000005E BE[00000000]            	mov esi, buf
+    88                                  	mov edi, newstr
+    89          ******************       error: symbol `newstr' undefined
+    90                                  
+    91                                  	.loop:
+    92 00000063 3D00000000              		cmp eax, 0
+    93 00000068 7433                    	        je .done
+    94                                  
+    95                                  ;;; ; ;  grab the next letter
+    96 0000006A 8A3E                    	        mov bh, [esi]
+    97                                  
+    98                                  ;;; ; only transforms values that are between 'a' and 'z'
+    99 0000006C 80FF5C                  	        cmp bh, '\'
+   100 0000006F 740F                    	        je .esc
+   101 00000071 E90F000000              	        jmp .lettercomplete
+   102                                  
+   103                                  	.esc:
+   104 00000076 E833000000              	        call handle_ESC
+   105                                  	.lettercomplete:
+   106 0000007B 883F                    	        mov [edi], bh
+   107 0000007D 81C601000000            	        add esi, 1
+   108 00000083 81C701000000            	        add edi, 1
+   109 00000089 2D01000000              	        sub eax, 1
+   110 0000008E E9D0FFFFFF              	        jmp .loop
+   111                                  
+   112                                  	.done:
+   113 00000093 E80A000000              	        call _end
+   114                                  _end:
+   115                                  ;;; ; print the original string message
+   116                                  
+   117                                  ;;; ; call sys_exit to finish things off
+   118 00000098 B801000000              	        mov eax, SYSCALL_EXIT ;sys_exit syscall
+   119 0000009D BB00000000              	        mov ebx, 0	      ;no error
+   120 000000A2 CD80                    	        int 80H		      ;kernel interrupt
+   121                                  
+   122                                  handle_ESC:
+   123 000000A4 C3                      	ret

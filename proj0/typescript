@@ -1,0 +1,9 @@
+Script started on Mon 18 Sep 2017 02:24:32 AM EDT
+[sepehr1@linux1 ~/313]nasm -f elf -g -F stabs hello.asm
+[sepehr1@linux1 ~/313]ld -m elf_i386 -o hello hello.o
+[sepehr1@linux1 ~/313]./hello
+Just keep swimming
+[sepehr1@linux1 ~/313]exit
+exit
+
+Script done on Mon 18 Sep 2017 02:25:01 AM EDT

@@ -1,0 +1,291 @@
+     1                                  ;;; escapeseqs.asm
+     2                                  ;;; escaeseqs
+     3                                  ;;; created: 10/1/17
+     4                                  ;;; modified 10/6/17
+     5                                  ;;; Sepehr Hajbarat
+     6                                  ;;; nasm elf assembler
+     7                                  ;;; carries out escape sequences typed in a string by the user
+     8                                  ;;; nasm -f elf -g F stabs escapeseqs.asm
+     9                                  ;;; ld -m elf_i386 -o escapeseqs escapeseqs.o
+    10                                  
+    11                                  		%define STDIN 0
+    12                                  	        %define STDOUT 1
+    13                                  	        %define STDERR 2
+    14                                  	        %define SYSCALL_EXIT  1
+    15                                  	        %define SYSCALL_READ  3
+    16                                  	        %define SYSCALL_WRITE 4
+    17                                  	        %define BUFLEN 256
+    18                                  
+    19                                  	[SECTION .data]
+    20                                  ;;; ; ; Here we declare initialized data. For example: messages, prompts,
+    21                                  ;;; ; ; and numbers that we know in advance
+    22 00000000 456E74657220537472-     msg1:	db "Enter String: " 	;user prompt
+    23 00000009 696E673A20         
+    24                                  len1:	equ $-msg1		;length of first message
+    25                                  
+    26 0000000E 4F726967696E616C3A-     msg2:	db "Original: " 	;message to display original string
+    27 00000017 20                 
+    28                                  len2:	equ $-msg2	;length of second message
+    29                                  
+    30 00000018 436F6E766572743A20      msg3:	db "Convert: "		;message to display converted string
+    31                                  len3:	equ $-msg3		;length of thirds message
+    32                                  
+    33 00000021 6162746E766672          letterTable:	db 'a', 'b', 't', 'n', 'v', 'f', 'r'
+    34 00000028 0708090A0B0C0D5C        decimalTable:	db 7, 8, 9, 10, 11, 12, 13, 92
+    35 00000030 070A0B0C0D0E0F86        octalTable:	db 007, 010, 011, 012, 013, 014, 015, 134
+    36                                  
+    37 00000038 4572726F723A20756E-     errUnknown:	db "Error: unknown escape sequence \" ;error message if capital letter
+    38 00000041 6B6E6F776E20657363-
+    39 0000004A 617065207365717565-
+    40 00000053 6E6365205C         
+    41                                  lenUnknown:	equ $-errUnknown		     ;length of error message
+    42                                  
+    43 00000058 4572726F723A206F63-     errOverflow:	db "Error: octal value overflow in \" ;error message if octal overflow
+    44 00000061 74616C2076616C7565-
+    45 0000006A 206F766572666C6F77-
+    46 00000073 20696E205C         
+    47                                  lenOverflow:	equ $-errOverflow		     ;length of error message
+    48                                  
+    49                                  	
+    50                                          [SECTION .bss]
+    51                                  ;;; ; ; Here we declare uninitialized data. We're reserving space (and
+    52                                  ;;; ; ; potentially associating names with that space) that our code
+    53                                  ;;; ; ; will use as it executes. Think of these as "global variables"
+    54                                  
+    55 00000000 <res 00000100>          buf:	        	resb BUFLEN	; buffer for read
+    56 00000100 <res 00000100>          newStr:			resb BUFLEN	; new output we're going to have
+    57 00000200 <res 00000004>          readlen:	        resb 4	; storage for the length of string we read
+    58                                  
+    59 00000204 <res 00000100>          escapeSeqStr:		resb BUFLEN ;to hold the error message of what we want to manipulate
+    60 00000304 <res 00000004>          escapeSeqLen:		resb 4	    ;length of error string
+    61                                  
+    62                                  	[SECTION .text]
+    63                                  
+    64                                  	global _start	; make start global so ld can find it
+    65                                  
+    66                                  _start:				; the program actually starts here
+    67                                  ;;; ;  prompt for user input
+    68 00000000 B804000000              	mov eax, SYSCALL_WRITE
+    69 00000005 BB01000000              	mov ebx, STDOUT
+    70 0000000A B9[00000000]            	mov ecx, msg1
+    71 0000000F BA0E000000              	mov edx, len1
+    72 00000014 CD80                    	int 80H
+    73                                  
+    74                                  ;;; ;  read user input
+    75 00000016 B803000000              	mov eax, SYSCALL_READ
+    76 0000001B BB00000000              	mov ebx, STDIN
+    77 00000020 B9[00000000]            	mov ecx, buf
+    78 00000025 BA00010000              	mov edx, BUFLEN
+    79 0000002A 81EA01000000            	sub edx, 1
+    80 00000030 CD80                    	int 80H
+    81                                  
+    82                                  ;;; ;  remember how many characters we read
+    83 00000032 A3[00020000]            	mov [readlen], eax
+    84                                  
+    85                                  ;;; ; ;  Tell user what they entered
+    86 00000037 B804000000              	mov eax, SYSCALL_WRITE
+    87 0000003C BB01000000              	mov ebx, STDOUT
+    88 00000041 B9[00000000]            	mov ecx, buf
+    89 00000046 8B15[00020000]          	mov edx, [readlen]
+    90 0000004C CD80                    	int 80H
+    91                                  	
+    92 0000004E B804000000              	mov eax, SYSCALL_WRITE
+    93 00000053 BB01000000              	mov ebx, STDOUT
+    94 00000058 B9[00000000]            	mov ecx, buf
+    95 0000005D BA00010000              	mov edx, BUFLEN
+    96 00000062 CD80                    	int 80H
+    97                                  	
+    98                                  
+    99                                  ;;; ;  loop over all characters
+   100 00000064 BE[00000000]            	mov esi, buf
+   101 00000069 BF[00010000]            	mov edi, newStr
+   102                                  
+   103                                  .loop:
+   104 0000006E 3D00000000              	cmp eax, 0
+   105 00000073 7429                    	je .done
+   106                                  
+   107                                  ;;; ;  grab the next letter
+   108 00000075 8A3E                    	mov bh, [esi]
+   109                                  
+   110                                  ;;; only transforms values that are between 'a' and 'z'
+   111 00000077 80FF5C                  	cmp bh, '\'
+   112 0000007A 7405                    	je .esc
+   113 0000007C E905000000              	jmp .lettercomplete
+   114                                  
+   115                                  .esc:
+   116 00000081 E883000000              	call handle_ESC
+   117                                  
+   118                                  	
+   119                                  .lettercomplete:
+   120 00000086 883F                    	mov [edi], bh
+   121 00000088 81C601000000            	add esi, 1
+   122 0000008E 81C701000000            	add edi, 1
+   123 00000094 2D01000000              	sub eax, 1
+   124 00000099 E9D0FFFFFF              	jmp .loop
+   125                                  
+   126                                  .done:
+   127 0000009E E800000000              	call _end
+   128                                  
+   129                                  
+   130                                  _end:
+   131                                  ;;; print the original string message
+   132 000000A3 B804000000              	mov eax, SYSCALL_WRITE
+   133 000000A8 BB01000000              	mov ebx, STDOUT
+   134 000000AD B9[0E000000]            	mov ecx, msg2
+   135 000000B2 BA0A000000              	mov edx, len2
+   136 000000B7 CD80                    	int 80H
+   137                                  
+   138                                  ;;; print the original string
+   139 000000B9 B804000000              	mov eax, SYSCALL_WRITE
+   140 000000BE BB01000000              	mov ebx, STDOUT
+   141 000000C3 B9[00000000]            	mov ecx, buf
+   142 000000C8 8B15[00020000]          	mov edx, [readlen]
+   143 000000CE CD80                    	int 80H
+   144                                  
+   145                                  ;;; print the converted string
+   146 000000D0 B804000000              	mov eax, SYSCALL_WRITE
+   147 000000D5 BB01000000              	mov ebx, STDOUT
+   148 000000DA B9[18000000]            	mov ecx, msg3
+   149 000000DF BA09000000              	mov edx, len3
+   150 000000E4 CD80                    	int 80H
+   151                                  	
+   152                                  ;;; print the converted string
+   153 000000E6 B804000000              	mov eax, SYSCALL_WRITE
+   154 000000EB BB01000000              	mov ebx, STDOUT
+   155 000000F0 B9[00010000]            	mov ecx, newStr
+   156 000000F5 8B15[00020000]          	mov edx, [readlen]
+   157 000000FB CD80                    	int 80H
+   158                                  	
+   159                                  ;;; call sys_exit to finish things off
+   160 000000FD B801000000              	mov eax, SYSCALL_EXIT	;sys_exit syscall
+   161 00000102 BB00000000              	mov ebx, 0		;no error
+   162 00000107 CD80                    	int 80H			;kernel interrupt
+   163                                  	
+   164                                  handle_ESC:
+   165                                  
+   166                                  .first:
+   167                                  ;;; push edi, eax, edx, ecx, and ebx in order and then go on to the next character
+   168 00000109 57                      	push edi
+   169 0000010A 50                      	push eax
+   170 0000010B 51                      	push ecx
+   171 0000010C 53                      	push ebx
+   172 0000010D 52                      	push edx
+   173                                  ;;; go to character next to '\'
+   174 0000010E 81C601000000            	add esi, 1
+   175 00000114 8A3E                    	mov bh, [esi]
+   176                                  
+   177                                  .checkValidity:
+   178 00000116 80FF30                  	cmp bh, '0'
+   179 00000119 7C5D                    	jl .unknownSeqError
+   180 0000011B 80FF39                  	cmp bh, '9'
+   181 0000011E 7F11                    	jg .letterFound
+   182                                  
+   183                                  .escapeSeqStr:
+   184 00000120 BF[04020000]            	mov edi, escapeSeqStr
+   185 00000125 B800000000              	mov eax, 0		;32 bit counter for comparing octal values
+   186 0000012A B100                    	mov cl, 0		;8 bit counter for making sure other stuff after is not inluded, and to compare with esi
+   187                                  
+   188 0000012C E900000000              	jmp .numberFound
+   189                                  
+   190                                  .numberFound:
+   191                                  
+   192                                  ;;; else if( c = lowercase)
+   193                                  .letterFound:
+   194 00000131 80FF61                  	cmp bh, 'a'
+   195 00000134 7C2F                    	jl .slashFound
+   196 00000136 80FF7A                  	cmp bh, 'z'
+   197 00000139 7F2A                    	jg .slashFound
+   198                                  
+   199                                  ;;; set the escape sequence string
+   200                                  ;;; look up in the table
+   201 0000013B B100                    	mov cl, 0
+   202 0000013D B800000000              	mov eax, 0
+   203 00000142 BF[21000000]            	mov edi, letterTable
+   204                                  
+   205                                  	.letterLoop:
+   206 00000147 80F907                  		cmp cl, 7	;compare counter to 7, to see if value was found in table
+   207 0000014A 742C                    		je .unknownSeqError	;if not, error has been found
+   208 0000014C 3A3C47                  		cmp bh, [edi+eax*2] ;compare the value inside the table
+   209 0000014F 7408                    		je .setLetterValue
+   210 00000151 FEC1                    		inc cl		;increase inside table counter
+   211 00000153 40                      		inc eax		;increase counter so we know which thing in the table it is
+   212 00000154 E9EEFFFFFF              		jmp .letterLoop	;go back to the start of the loop
+   213                                  
+   214                                  	.setLetterValue:
+   215                                  ;;; add 7 to cl so it matches the ascii value it should
+   216 00000159 80C107                  		add cl, 7
+   217 0000015C 5B                      		pop ebx
+   218 0000015D 88CF                    		mov bh, cl
+   219 0000015F 53                      		push ebx
+   220 00000160 E9A9000000              		jmp .done
+   221                                  
+   222                                  	.slashFound:
+   223 00000165 80FF5C                  		cmp bh, '\'
+   224 00000168 7405                    		je .makeSlash
+   225 0000016A E909000000              		jmp .unknownSeqError	;if not a backslash, we know its not a number or letter, so it's an error
+   226                                  	.makeSlash:
+   227 0000016F 5B                      		pop ebx
+   228 00000170 B75C                    		mov bh, 92
+   229 00000172 53                      		push ebx
+   230 00000173 E996000000              		jmp .done
+   231                                  	
+   232                                  	.unknownSeqError:
+   233                                  	;; print the error for unknown sequence
+   234 00000178 BF[04020000]            		mov edi, escapeSeqStr
+   235 0000017D 883F                    		mov [edi], bh
+   236 0000017F A1[04030000]            		mov eax,[escapeSeqLen]
+   237 00000184 40                      		inc eax
+   238                                  	;; add \n to end of string to terminate it
+   239 00000185 81C701000000            		add edi, 1
+   240 0000018B B70A                    		mov bh, 10
+   241 0000018D 883F                    		mov [edi], bh
+   242 0000018F 40                      		inc eax
+   243 00000190 A3[04030000]            		mov [escapeSeqLen], eax
+   244                                  	;; print out the message
+   245 00000195 B804000000              		mov eax, SYSCALL_WRITE
+   246 0000019A BB01000000              		mov ebx, STDOUT
+   247 0000019F B9[38000000]            		mov ecx, errUnknown
+   248 000001A4 BA20000000              		mov edx, lenUnknown
+   249                                  	;; print out escape string
+   250 000001A9 B804000000              		mov eax, SYSCALL_WRITE
+   251 000001AE BB01000000              		mov ebx, STDOUT
+   252 000001B3 B9[04020000]            		mov ecx, escapeSeqStr
+   253 000001B8 8B15[04030000]          		mov edx, [escapeSeqLen]
+   254 000001BE CD80                    		int 80H
+   255                                  
+   256                                  	;; we are now finished
+   257 000001C0 E949000000              		jmp .done
+   258                                  	
+   259                                  	.octalOverflowError:
+   260 000001C5 BF[04020000]            		mov edi, escapeSeqStr
+   261 000001CA A1[04030000]            		mov eax, [escapeSeqLen]
+   262                                  	;; add \n to end of string to terminate it
+   263 000001CF 81C701000000            		add edi, 1
+   264 000001D5 B70A                    		mov bh, 10
+   265 000001D7 883F                    		mov [edi], bh
+   266 000001D9 40                      		inc eax
+   267 000001DA A3[04030000]            		mov [escapeSeqLen], eax
+   268                                  	;;;  print out the message for overflow
+   269 000001DF B804000000              		mov eax, SYSCALL_WRITE
+   270 000001E4 BB01000000              		mov ebx, STDOUT
+   271 000001E9 B9[58000000]            		mov ecx, errOverflow
+   272 000001EE BA20000000              		mov edx, lenOverflow
+   273                                  	;; print out escape string
+   274 000001F3 B804000000              		mov eax, SYSCALL_WRITE
+   275 000001F8 BB01000000              		mov ebx, STDOUT
+   276 000001FD B9[04020000]            		mov ecx, escapeSeqStr
+   277 00000202 BA04000000              		mov edx, 4
+   278 00000207 CD80                    		int 80H
+   279 00000209 E900000000              		jmp .done
+   280                                  	.done:
+   281 0000020E 5B                      		pop ebx
+   282 0000020F 5F                      		pop edi
+   283 00000210 59                      		pop ecx
+   284 00000211 58                      		pop eax
+   285 00000212 5A                      		pop edx
+   286                                  
+   287 00000213 C3                      		ret
+   288                                  	
+   289                                  	
+   290                                  	
+   291                                  

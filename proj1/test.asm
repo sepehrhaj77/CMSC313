@@ -1,0 +1,28 @@
+%define STDIN 0
+	        %define STDOUT 1
+	        %define STDERR 2
+	        %define SYSCALL_EXIT  1
+	        %define SYSCALL_READ  3
+	        %define SYSCALL_WRITE 4
+	        %define BUFLEN 256
+
+	[SECTION .data]	
+num:	db 10
+
+	[SECTION .text]
+	global _start   ; make start global so ld can find it
+
+_start:				; the program actually starts here
+
+	mov eax, num
+
+	mov eax, SYSCALL_WRITE
+	mov ebx, STDOUT
+	mov ecx, num
+	mov edx, 1
+	int 80H
+
+	mov eax, SYSCALL_EXIT 	; sys_exit syscall
+	mov ebx, 0 ; no error
+	int 80H	   ; kernel interrupt
+	
