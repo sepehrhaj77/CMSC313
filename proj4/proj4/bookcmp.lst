@@ -1,0 +1,72 @@
+     1                                  ;;; ; bookcmp.asm
+     2                                  ;;; ; sort_books.out
+     3                                  ;;; ; created: 10/28/17
+     4                                  ;;; ; modified 11/1/17
+     5                                  ;;; ; Sepehr Hajbarat
+     6                                  ;;; ; Compares two books passed by a C function and returns a -1, 0, or 1 based on whether book1 is less than, equal to, or greater than book 2 respectively by year and then title
+     7                                  	
+     8                                  
+     9                                  
+    10                                  ;;  Offsets for fields in struct book.
+    11                                  ;;
+    12                                  %define AUTHOR_OFFSET 0
+    13                                  %define TITLE_OFFSET 21
+    14                                  %define SUBJECT_OFFSET 54
+    15                                  %define YEAR_OFFSET 68
+    16                                  	
+    17                                  	SECTION .data
+    18                                  	
+    19                                  	SECTION .text
+    20                                  	global bookcmp
+    21                                  	extern book1, book2
+    22                                  
+    23                                  bookcmp:
+    24 00000000 8B1D[00000000]          	mov ebx, [book1]
+    25 00000006 8B0D[00000000]          	mov ecx, [book2]
+    26                                  
+    27                                  	;; compare their years first
+    28                                  	.compareYear:
+    29 0000000C 8B4344                  		mov eax, dword[ebx+YEAR_OFFSET] ;store the year of book 1
+    30 0000000F 8B5144                  		mov edx, dword[ecx+YEAR_OFFSET] ;store the year of book 2
+    31 00000012 39D0                    		cmp eax, edx
+    32 00000014 7404                    		je .titlecmp		;if years are equal, compare titles
+    33 00000016 7C28                    		jl .less		;if book 1's year is less, move on to return a -1 in eax
+    34 00000018 7F30                    		jg .greater		;if book 1's year is greater, move on to return a +1 in eax
+    35                                  
+    36                                  
+    37                                  	;; if the years of the books are the same, subsort by title
+    38                                  	.titlecmp:
+    39 0000001A 8D7315                  		lea esi, [ebx+TITLE_OFFSET] 
+    40 0000001D 8D7915                  		lea edi, [ecx+TITLE_OFFSET] 
+    41                                  
+    42                                  	.titlecmpLoop:
+    43 00000020 8A26                    		mov ah, [esi]		    ;store the title of book 1 in the 16 byte register ah
+    44 00000022 8A37                    		mov dh, [edi]		    ;store the title of book 2 in the 16 byte register dh
+    45 00000024 38F4                    		cmp ah, dh
+    46 00000026 7C18                    		jl .less		;if the current letter of the title of book 1 is lower alphabetically, move on to return a -1
+    47 00000028 7F20                    		jg .greater		;if the current letter of the title of book 1 is greater alphabetically, move on to retuen a +1
+    48                                  	
+    49                                  	;; if the letters are equal, make sure they're not both null. If not, then increment esi and edi to point to the next letter before going back to the beginning of the loop
+    50 0000002A 80FC00                  		cmp ah, 0
+    51 0000002D 7407                    		je .equal 	;if they are both equal up until null, they have the exact same title and are equal, so a 0 should be returned
+    52                                  	
+    53 0000002F 46                      		inc esi
+    54 00000030 47                      		inc edi
+    55 00000031 E9EAFFFFFF              		jmp .titlecmpLoop
+    56                                  	
+    57                                  	;; if the books are the same year and title
+    58                                  	.equal:
+    59 00000036 B800000000              		mov eax, 0
+    60 0000003B E914000000              		jmp .done
+    61                                  	
+    62                                  	;; if book 1 is less than book 2
+    63                                  	.less:
+    64 00000040 B8FFFFFFFF              		mov eax, -1
+    65 00000045 E90A000000              		jmp .done
+    66                                  
+    67                                  	;; if book 1 is greater than book 2
+    68                                  	.greater:
+    69 0000004A B801000000              		mov eax, 1
+    70 0000004F E900000000              		jmp .done
+    71                                  	.done:
+    72 00000054 C3                      		ret
